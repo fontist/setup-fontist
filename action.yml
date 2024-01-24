@@ -12,10 +12,16 @@ runs:
         ruby-version: ruby
       env:
         RUNNER_TOOL_CACHE: ${{ steps.mktemp.outputs.temp-dir }}
+        GITHUB_PATH: ${{ steps.mktemp.outputs.temp-dir }}/GITHUB_PATH
+        GITHUB_ENV: ${{ steps.mktemp.outputs.temp-dir }}/GITHUB_ENV
     - shell: bash
       run: |
-        PATH="$PATH:$RUBY_PREFIX"
+        export PATH="$PATH:$RUBY_PREFIX"
+        echo "$SETUP_RUBY_GITHUB_PATH"
+        echo "$SETUP_RUBY_GITHUB_ENV"
         echo "$RUBY_PREFIX"
         gem install fontist
       env:
         RUBY_PREFIX: ${{ steps.setup-ruby.outputs.ruby-prefix }}
+        SETUP_RUBY_GITHUB_PATH: ${{ steps.mktemp.outputs.temp-dir }}/GITHUB_PATH
+        SETUP_RUBY_GITHUB_ENV: ${{ steps.mktemp.outputs.temp-dir }}/GITHUB_ENV
