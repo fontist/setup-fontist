@@ -1,0 +1,19 @@
+runs:
+  using: composite
+  steps:
+    - id: mktemp
+      shell: bash
+      run: |
+        temp_dir=$(mktemp -d)
+        echo "temp-dir=$temp_dir" >> "$GITHUB_OUTPUT"
+    - id: setup-ruby
+      uses: ruby/setup-ruby@v1
+      env:
+        RUNNER_TOOL_CACHE: ${{ steps.mktemp.outputs.temp-dir }}
+    - shell: bash
+      run: |
+        PATH="$PATH:$RUBY_PREFIX"
+        echo "$RUBY_PREFIX"
+        gem install fontist
+      env:
+        RUBY_PREFIX: ${{ steps.setup-ruby.outputs.ruby-prefix }}
