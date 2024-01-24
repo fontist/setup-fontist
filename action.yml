@@ -8,6 +8,8 @@ runs:
         echo "temp-dir=$temp_dir" >> "$GITHUB_OUTPUT"
     - id: setup-ruby
       uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: ruby
       env:
         RUNNER_TOOL_CACHE: ${{ steps.mktemp.outputs.temp-dir }}
     - shell: bash
