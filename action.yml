@@ -1,27 +1,9 @@
+inputs:
+  fontist-version:
+    default: latest
+  fontist-token:
+    default: ${{ github.server_url == 'https://github.com' && github.token || '' }}
+
 runs:
-  using: composite
-  steps:
-    - id: mktemp
-      shell: bash
-      run: |
-        temp_dir=$(mktemp -d)
-        echo "temp-dir=$temp_dir" >> "$GITHUB_OUTPUT"
-    - id: setup-ruby
-      uses: ruby/setup-ruby@v1
-      with:
-        ruby-version: ruby
-      env:
-        RUNNER_TOOL_CACHE: ${{ steps.mktemp.outputs.temp-dir }}
-        GITHUB_PATH: ${{ steps.mktemp.outputs.temp-dir }}/GITHUB_PATH
-        GITHUB_ENV: ${{ steps.mktemp.outputs.temp-dir }}/GITHUB_ENV
-    - shell: bash
-      run: |
-        export PATH="$PATH:$RUBY_PREFIX"
-        echo "$SETUP_RUBY_GITHUB_PATH"
-        echo "$SETUP_RUBY_GITHUB_ENV"
-        echo "$RUBY_PREFIX"
-        gem install fontist
-      env:
-        RUBY_PREFIX: ${{ steps.setup-ruby.outputs.ruby-prefix }}
-        SETUP_RUBY_GITHUB_PATH: ${{ steps.mktemp.outputs.temp-dir }}/GITHUB_PATH
-        SETUP_RUBY_GITHUB_ENV: ${{ steps.mktemp.outputs.temp-dir }}/GITHUB_ENV
+  using: node20
+  main: dist/main.js

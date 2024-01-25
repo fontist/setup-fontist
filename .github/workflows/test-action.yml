@@ -28,4 +28,4 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./
-      - run: fontist --help
+      - run: fontist list "Fira Code"
