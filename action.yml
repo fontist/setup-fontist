@@ -1,11 +1,19 @@
 inputs:
+  setup-ruby:
+    default: true
   fontist-version:
     default: "1.19.0"
 
 runs:
   using: composite
   steps:
+    - if: inputs.setup-ruby == 'true'
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: ruby
     - shell: bash
-      run: gem install fontist --version "$(printenv INPUT_FONTIST-VERSION)"
+      run: |
+        gem install fontist --version "$(printenv INPUT_FONTIST-VERSION)"
+        fontist update
       env:
         INPUT_FONTIST-VERSION: ${{ inputs.fontist-version }}
