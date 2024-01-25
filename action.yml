@@ -1,9 +1,11 @@
 inputs:
   fontist-version:
-    default: latest
-  fontist-token:
-    default: ${{ github.server_url == 'https://github.com' && github.token || '' }}
+    default: "1.19.0"
 
 runs:
-  using: node20
-  main: dist/main.js
+  using: composite
+  steps:
+    - shell: bash
+      run: gem install fontist --version "$(printenv INPUT_FONTIST-VERSION)"
+      env:
+        INPUT_FONTIST-VERSION: ${{ inputs.fontist-version }}
