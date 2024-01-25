@@ -1,3 +1,10 @@
+name: Setup Fontist
+description: ""
+
+branding:
+  icon: play
+  color: purple
+
 inputs:
   setup-ruby:
     default: true
