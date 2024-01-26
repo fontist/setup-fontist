@@ -32,5 +32,4 @@ jobs:
       - run: bun install
       - run: bun run build
       - uses: ./
-      - run: typst --version
-      - run: typst compile test.typ
+      - run: fontist list "Fira Code"
