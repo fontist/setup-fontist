@@ -49,6 +49,8 @@ if (!found) {
         RUNNER_TOOL_CACHE: join(cacheDir, "setup-ruby-tool-cache"),
         GITHUB_PATH: join(tempDir, "GITHUB_PATH"),
         GITHUB_ENV: join(tempDir, "GITHUB_ENV"),
+        "INPUT_RUBY-VERSION": "ruby",
+        "INPUT_BUNDLER-CACHE": "false",
       },
       all: true
     })`${process.execPath} ${setupRubyPath}/dist/index.js`
