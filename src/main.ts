@@ -6,7 +6,7 @@ import * as github from "@actions/github";
 import { createUnauthenticatedAuth } from "@octokit/auth-unauthenticated";
 import * as semver from "semver";
 import { delimiter, join } from "node:path";
-import { cp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { chmod, cp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 
 const token = core.getInput("fontist-token");
 const octokit = token
@@ -60,6 +60,8 @@ set GEM_HOME=${join(cacheDir, "install-dir")}
 ${join(cacheDir, "bindir", "fontist")} %*`
     await writeFile(join(cacheDir, "bin", "fontist"), bash)
     await writeFile(join(cacheDir, "bin", "fontist.cmd"), cmd)
+    await chmod(join(cacheDir, "bin", "fontist"), 0o755)
+    await chmod(join(cacheDir, "bin", "fontist.cmd"), 0o755)
   } catch (error) {
     core.error(`Failure inside setup block. Removing tool cache folder.`);
     await rm(cacheDir, { recursive: true, force: true });
