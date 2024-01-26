@@ -20,6 +20,7 @@ outputs:
 runs:
   using: composite
   steps:
+    - run: touch "$RUNNER_TEMP/GITHUB_PATH"
     - uses: ruby/setup-ruby@v1
       with:
         ruby-version: ruby
