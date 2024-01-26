@@ -6,7 +6,7 @@ import * as github from "@actions/github"
 import { createUnauthenticatedAuth } from "@octokit/auth-unauthenticated"
 import * as semver from "semver"
 import { join } from "node:path"
-import { mkdir, rm } from "node:fs/promises"
+import { mkdir, rm, writeFile } from "node:fs/promises"
 
 // Make sure it's still 'dist/index.js' when you change this!
 const setupRubyTag = 'v1.170.0'
@@ -44,11 +44,15 @@ if (!found) {
   await mkdir(cacheDir);
   cacheDir = await tc.cacheDir(cacheDir, "fontist", version)
   try {
+    const githubPath = join(tempDir, "GITHUB_PATH")
+    await writeFile(githubPath, "")
+    const githubEnv = join(tempDir, "GITHUB_ENV")
+    await writeFile(githubEnv, "")
     const { all } = await $({
       env: {
         RUNNER_TOOL_CACHE: join(cacheDir, "setup-ruby-tool-cache"),
-        GITHUB_PATH: join(tempDir, "GITHUB_PATH"),
-        GITHUB_ENV: join(tempDir, "GITHUB_ENV"),
+        GITHUB_PATH: githubPath,
+        GITHUB_ENV: githubEnv,
         "INPUT_RUBY-VERSION": "ruby",
         "INPUT_BUNDLER-CACHE": "false",
       },
