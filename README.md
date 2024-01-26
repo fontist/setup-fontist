@@ -44,3 +44,12 @@ jobs:
 ![GNU Bash](https://img.shields.io/static/v1?style=for-the-badge&message=GNU+Bash&color=4EAA25&logo=GNU+Bash&logoColor=FFFFFF&label=)
 
 TODO: Add development section
+
+## Contributions
+
+This GitHub Action was originally created by @jcbhmr for the
+[Typst project](https://github.com/typst-community/typst.js)
+and contributed to [Fontist](https://www.fontist.org).
+
+Huge thanks to @jcbhmr for the tremendous effort in improving the Fontist
+ecosystem!
