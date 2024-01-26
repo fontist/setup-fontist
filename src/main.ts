@@ -53,6 +53,8 @@ if (!found) {
   found = cacheDir
 }
 
-core.addPath(found);
+core.addPath(join(found, "bindir"));
 core.setOutput("fontist-version", version);
 core.info(`✅ Fontist v${version} installed!`);
+
+await $({ stdio: "inherit" })`fontist update`
