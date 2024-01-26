@@ -59,3 +59,5 @@ core.setOutput("fontist-version", version);
 core.info(`✅ Fontist v${version} installed!`);
 
 await $({ stdio: "inherit" })`fontist update`;
+
+console.debug(process.env)
