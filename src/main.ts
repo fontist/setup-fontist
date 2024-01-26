@@ -9,13 +9,12 @@ import { delimiter, join } from "node:path"
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises"
 
 const token = core.getInput("fontist-token");
-// const octokit = token
-//   ? github.getOctokit(token)
-//   : github.getOctokit(undefined!, {
-//       authStrategy: createUnauthenticatedAuth,
-//       auth: { reason: "no 'fontist-token' input" },
-//     });
-const octokit = github.getOctokit(token)
+const octokit = token
+  ? github.getOctokit(token)
+  : github.getOctokit(undefined!, {
+      authStrategy: createUnauthenticatedAuth,
+      auth: { reason: "no 'fontist-token' input" },
+    });
 
 const versionRaw = core.getInput("fontist-version");
 const tags = await octokit.paginate(octokit.rest.repos.listTags, {
