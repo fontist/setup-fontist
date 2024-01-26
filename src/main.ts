@@ -20,21 +20,12 @@ const octokit = token
     });
 
 const versionRaw = core.getInput("fontist-version");
-let version: string;
-if (versionRaw === "latest") {
-  const { data } = await octokit.rest.repos.getLatestRelease({
-    owner: "fontist",
-    repo: "fontist",
-  });
-  version = data.tag_name.slice(1);
-} else {
-  const releases = await octokit.paginate(octokit.rest.repos.listReleases, {
-    owner: "fontist",
-    repo: "fontist",
-  });
-  const versions = releases.map((release) => release.tag_name.slice(1));
-  version = semver.maxSatisfying(versions, versionRaw)!;
-}
+const tags = await octokit.paginate(octokit.rest.repos.listTags, {
+  owner: "fontist",
+  repo: "fontist",
+});
+const versions = tags.map((tag) => tag.name);
+const version = semver.maxSatisfying(versions, versionRaw === "latest" ? "*" : versionRaw)!;
 core.debug(`Resolved version: v${version}`);
 if (!version) throw new DOMException(`${versionRaw} resolved to ${version}`);
 
