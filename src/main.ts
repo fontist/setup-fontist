@@ -45,7 +45,7 @@ if (!found) {
   try {
     await $({
       stdio: "inherit",
-    })`gem install fontist --version ${version} --install-dir ${join(cacheDir, "install-dir")} --bindir ${join(cacheDir, "bindir")}`;
+    })`gem install fontist --version ${version} --bindir ${join(cacheDir, "bindir")}`;
   } catch (error) {
     core.error(`Failure inside setup block. Removing tool cache folder.`);
     await rm(cacheDir, { recursive: true, force: true });
