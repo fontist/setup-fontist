@@ -12,6 +12,8 @@ inputs:
   fontist-token:
     description: The GitHub token to use when fetching the version list from fontist/fontist. You shouldn't have to touch this. The default is the 'github.token' if you're on github.com or unauthenticated (rate limited) if you're not on github.com.
     default: ${{ github.server_url == 'https://github.com' && github.token || '' }}
+  cache:
+    default: true
 
 outputs:
   fontist-version:
@@ -25,12 +27,14 @@ runs:
   using: composite
   steps:
     - shell: bash
-      run: touch "$RUNNER_TEMP/GITHUB_PATH"
+      run: |
+        mkdir -p "$RUNNER_TEMP/setup-fontist"
+        touch "$RUNNER_TEMP/setup-fontist/GITHUB_PATH"
     - uses: ruby/setup-ruby@v1
       with:
         ruby-version: ruby
       env:
-        GITHUB_PATH: ${{ runner.temp }}/GITHUB_PATH
+        GITHUB_PATH: ${{ runner.temp }}/setup-fontist/GITHUB_PATH
     - id: setup-fontist
       uses: ./setup-fontist
       with: ${{ inputs }}

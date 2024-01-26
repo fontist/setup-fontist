@@ -7,6 +7,15 @@ import { createUnauthenticatedAuth } from "@octokit/auth-unauthenticated";
 import * as semver from "semver";
 import { delimiter, join } from "node:path";
 import { chmod, cp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import * as cache from "@actions/cache"
+import * as glob from "@actions/glob"
+
+const githubPath = await readFile(
+  join(process.env.RUNNER_TEMP!, "setup-fontist/GITHUB_PATH"),
+  "utf8",
+);
+const githubPathItems = githubPath.trimEnd().split(/\r?\n/);
+process.env.PATH = [process.env.PATH, ...githubPathItems].join(delimiter);
 
 const token = core.getInput("fontist-token");
 const octokit = token
@@ -30,15 +39,8 @@ core.debug(`Resolved version: v${version}`);
 if (!version) throw new DOMException(`${versionRaw} resolved to ${version}`);
 
 let found = tc.find("fontist", version);
-core.setOutput("cache-hit", !!found);
+let cacheHit = !!found
 if (!found) {
-  const githubPath = await readFile(
-    join(process.env.RUNNER_TEMP!, "GITHUB_PATH"),
-    "utf8",
-  );
-  const githubPathItems = githubPath.trimEnd().split(/\r?\n/);
-  process.env.PATH = [process.env.PATH, ...githubPathItems].join(delimiter);
-
   let cacheDir = join(process.env.RUNNER_TEMP!, Math.random().toString());
   await mkdir(cacheDir);
   cacheDir = await tc.cacheDir(cacheDir, "fontist", version);
@@ -74,4 +76,16 @@ core.addPath(join(found, "bin"));
 core.setOutput("fontist-version", version);
 core.info(`✅ Fontist v${version} installed!`);
 
+if (core.getBooleanInput("cache")) {
+  const cacheDir = join(process.env.HOME!, ".fontist")
+  const primaryKey = `fontist-${github.context.ref}`
+  core.saveState("cache-primary-key", primaryKey)
+  const hitKey = await cache.restoreCache([cacheDir], primaryKey)
+  core.saveState("cache-hit", hitKey)
+  cacheHit ||= !!hitKey
+}
+
+core.setOutput("cache-hit", cacheHit)
+
+core.info(`Running 'fontist update'...`)
 await $({ stdio: "inherit" })`fontist update`;
