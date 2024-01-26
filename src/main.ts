@@ -6,7 +6,7 @@ import * as github from "@actions/github"
 import { createUnauthenticatedAuth } from "@octokit/auth-unauthenticated"
 import * as semver from "semver"
 import { join } from "node:path"
-import { mkdir, rm, writeFile } from "node:fs/promises"
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises"
 
 // Make sure it's still 'dist/index.js' when you change this!
 const setupRubyTag = 'v1.170.0'
@@ -58,8 +58,9 @@ if (!found) {
       },
       all: true
     })`${process.execPath} ${setupRubyPath}/dist/index.js`
-    // Escaped so that "::command::options" isn't interpreted as a command.
-    console.error(JSON.stringify(all))
+    core.info(all!)
+    core.info(`GITHUB_PATH=${await readFile(githubPath, "utf8")}`)
+    core.info(`GITHUB_ENV=${await readFile(githubEnv, "utf8")}`)
   } catch (error) {
     core.error(`Failure inside setup block. Removing tool cache folder.`)
     await rm(cacheDir, { recursive: true, force: true })
