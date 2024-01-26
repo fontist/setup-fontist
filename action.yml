@@ -12,8 +12,10 @@ inputs:
     default: latest
 
 outputs:
-  fontist-version: {}
-  cache-hit: {}
+  fontist-version:
+    value: ${{ steps.setup-fontist.outputs.fontist-version }}
+  cache-hit:
+    value: ${{ steps.setup-fontist.outputs.cache-hit }}
 
 runs:
   using: composite
@@ -23,4 +25,6 @@ runs:
         ruby-version: ruby
       env:
         GITHUB_PATH: ${{ runner.temp }}/GITHUB_PATH
-    - uses: ./setup-fontist
+    - id: setup-fontist
+      uses: ./setup-fontist
+      with: ${{ inputs }}
