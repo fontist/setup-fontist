@@ -34,6 +34,7 @@ core.setOutput("cache-hit", !!found)
 if (!found) {
   let setupRubyPath = await tc.downloadTool(`https://github.com/ruby/setup-ruby/archive/refs/tags/${setupRubyTag}.zip`)
   setupRubyPath = await tc.extractZip(setupRubyPath)
+  setupRubyPath = join(setupRubyPath, `setup-ruby-${setupRubyTag}`)
 
   const tempDir =join(process.env.RUNNER_TEMP!, Math.random().toString())
   await mkdir(tempDir);
