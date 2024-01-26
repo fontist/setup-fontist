@@ -15,8 +15,10 @@ inputs:
 
 outputs:
   fontist-version:
+    description: The version of Fontist that was installed. This will be something like '1.10.0' or similar.
     value: ${{ steps.setup-fontist.outputs.fontist-version }}
   cache-hit:
+    description: Whether or not Fontist was restored from the runner's cache or download anew.
     value: ${{ steps.setup-fontist.outputs.cache-hit }}
 
 runs:

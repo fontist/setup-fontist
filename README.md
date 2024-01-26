@@ -45,7 +45,7 @@ jobs:
 
 ### Outputs
 
-- **`fontist-version`:** The version of Fontist that was installed. This will be something like 16.0.0 or similar.
+- **`fontist-version`:** The version of Fontist that was installed. This will be something like `1.10.0` or similar.
 
 - **`cache-hit`:** Whether or not Fontist was restored from the runner's cache or download anew.
 
