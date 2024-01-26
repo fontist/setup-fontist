@@ -6,17 +6,21 @@ branding:
   color: purple
 
 inputs:
-  fontist-version:
-    default: latest
   fontist-token:
     default: ${{ github.server_url == 'https://github.com' && github.token || '' }}
-  setup-ruby-token:
-    default: ${{ github.server_url == 'https://github.com' && github.token || '' }}
+  fontist-version:
+    default: latest
 
 outputs:
   fontist-version: {}
   cache-hit: {}
 
 runs:
-  using: node20
-  main: dist/main.js
+  using: composite
+  steps:
+    - uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: ruby
+      env:
+        GITHUB_PATH: ${{ runner.temp }}/GITHUB_PATH
+    - uses: ./setup-fontist
