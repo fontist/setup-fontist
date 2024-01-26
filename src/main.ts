@@ -37,7 +37,7 @@ if (!found) {
     "utf8",
   );
   const githubPathItems = githubPath.trimEnd().split(/\r?\n/);
-  const extraPath = githubPathItems.join(delimiter);
+  process.env.PATH = [process.env.PATH, ...githubPathItems].join(delimiter);
 
   let cacheDir = join(process.env.RUNNER_TEMP!, Math.random().toString());
   await mkdir(cacheDir);
@@ -45,16 +45,12 @@ if (!found) {
   try {
     await $({
       stdio: "inherit",
-      env: {
-        PATH: `${process.env.PATH}${delimiter}${extraPath}`,
-      },
     })`gem install fontist --version ${version} --install-dir ${join(cacheDir, "install-dir")} --bindir ${join(cacheDir, "bindir")}`;
   } catch (error) {
     core.error(`Failure inside setup block. Removing tool cache folder.`);
     await rm(cacheDir, { recursive: true, force: true });
     throw error;
   }
-
   found = cacheDir;
 }
 
