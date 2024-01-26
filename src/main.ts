@@ -32,9 +32,10 @@ if (!version) throw new DOMException(`${versionRaw} resolved to ${version}`);
 let found = tc.find("fontist", version);
 core.setOutput("cache-hit", !!found)
 if (!found) {
+  core.info(`Downloading setup-ruby@${setupRubyTag}`)
   let setupRubyPath = await tc.downloadTool(`https://github.com/ruby/setup-ruby/archive/refs/tags/${setupRubyTag}.zip`)
   setupRubyPath = await tc.extractZip(setupRubyPath)
-  setupRubyPath = join(setupRubyPath, `setup-ruby-${setupRubyTag}`)
+  setupRubyPath = join(setupRubyPath, `setup-ruby-${setupRubyTag.slice(1)}`)
 
   const tempDir =join(process.env.RUNNER_TEMP!, Math.random().toString())
   await mkdir(tempDir);
@@ -54,6 +55,7 @@ if (!found) {
     // Escaped so that "::command::options" isn't interpreted as a command.
     console.error(JSON.stringify(all))
   } catch (error) {
+    core.error(`Failure inside setup block. Removing tool cache folder.`)
     await rm(cacheDir, { recursive: true, force: true })
     throw error
   }
