@@ -6,10 +6,12 @@ branding:
   color: purple
 
 inputs:
-  fontist-token:
-    default: ${{ github.server_url == 'https://github.com' && github.token || '' }}
   fontist-version:
+    description: The version of Fontist to install. This can be an exact version lile '1.10.0' or a semver range such as '1.x' or '~1.15.0'. The default value is 'latest'.
     default: latest
+  fontist-token:
+    description: The GitHub token to use when fetching the version list from fontist/fontist. You shouldn't have to touch this. The default is the 'github.token' if you're on github.com or unauthenticated (rate limited) if you're not on github.com.
+    default: ${{ github.server_url == 'https://github.com' && github.token || '' }}
 
 outputs:
   fontist-version:
