@@ -52,7 +52,7 @@ if (!found) {
 #!/bin/bash
 export GEM_PATH=${join(cacheDir, "install-dir")}
 export GEM_HOME=${join(cacheDir, "install-dir")}
-exec ${join(cacheDir, "bindir", "fontist")} $@`
+exec ${join(cacheDir, "bindir", "fontist")} "$@"`
     const cmd = `\
 @echo off
 set GEM_PATH=${join(cacheDir, "install-dir")}
