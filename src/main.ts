@@ -21,7 +21,7 @@ const tags = await octokit.paginate(octokit.rest.repos.listTags, {
   owner: "fontist",
   repo: "fontist",
 });
-const versions = tags.map((tag) => tag.name);
+const versions = tags.map((tag) => tag.name.slice(1));
 const version = semver.maxSatisfying(versions, versionRaw === "latest" ? "*" : versionRaw)!;
 core.debug(`Resolved version: v${version}`);
 if (!version) throw new DOMException(`${versionRaw} resolved to ${version}`);
