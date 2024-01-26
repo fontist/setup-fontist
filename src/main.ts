@@ -6,7 +6,7 @@ import * as github from "@actions/github";
 import { createUnauthenticatedAuth } from "@octokit/auth-unauthenticated";
 import * as semver from "semver";
 import { delimiter, join } from "node:path";
-import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { cp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 
 const token = core.getInput("fontist-token");
 const octokit = token
@@ -45,7 +45,21 @@ if (!found) {
   try {
     await $({
       stdio: "inherit",
-    })`gem install fontist --version ${version} --bindir ${join(cacheDir, "bindir")}`;
+    })`gem install fontist --version ${version} --install-dir ${join(cacheDir, "install-dir")} --bindir ${join(cacheDir, "bindir")}`;
+
+    await mkdir(join(cacheDir, "bin"));
+    const bash = `\
+#!/bin/bash
+export GEM_PATH=${join(cacheDir, "install-dir")}
+export GEM_HOME=${join(cacheDir, "install-dir")}
+exec ${join(cacheDir, "bindir", "fontist")} $@`
+    const cmd = `\
+@echo off
+set GEM_PATH=${join(cacheDir, "install-dir")}
+set GEM_HOME=${join(cacheDir, "install-dir")}
+${join(cacheDir, "bindir", "fontist")} %*`
+    await writeFile(join(cacheDir, "bin", "fontist"), bash)
+    await writeFile(join(cacheDir, "bin", "fontist.cmd"), cmd)
   } catch (error) {
     core.error(`Failure inside setup block. Removing tool cache folder.`);
     await rm(cacheDir, { recursive: true, force: true });
@@ -54,10 +68,8 @@ if (!found) {
   found = cacheDir;
 }
 
-core.addPath(join(found, "bindir"));
+core.addPath(join(found, "bin"));
 core.setOutput("fontist-version", version);
 core.info(`✅ Fontist v${version} installed!`);
 
 await $({ stdio: "inherit" })`fontist update`;
-
-console.debug(process.env)
