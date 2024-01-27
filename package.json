@@ -19,7 +19,7 @@
     "@types/bun": "latest"
   },
   "scripts": {
-    "build": "bun build ./src/main.ts --outdir=dist --target=node",
+    "build": "bun build ./src/main.ts ./src/post.ts --outdir=dist --target=node",
     "format": "prettier -w .",
     "lint": "tsc --noEmit"
   }
