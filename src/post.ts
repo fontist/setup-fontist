@@ -11,3 +11,5 @@ if (core.getBooleanInput("cache")) {
   core.info(`Saving ${cacheDir} with key ${primaryKey}`);
   await cache.saveCache([cacheDir], primaryKey);
 }
+
+process.exit();

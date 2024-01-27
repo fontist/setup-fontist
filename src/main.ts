@@ -48,7 +48,7 @@ if (!found) {
     try {
       await $({
         stdio: "inherit",
-      })`gem install fontist --version ${version} --install-dir ${join(cacheDir, "install-dir")} --bindir ${join(cacheDir, "bindir")}`;
+      })`gem install fontist --version ${version} --no-document --install-dir ${join(cacheDir, "install-dir")} --bindir ${join(cacheDir, "bindir")}`;
 
       await mkdir(join(cacheDir, "bin"));
 
@@ -95,3 +95,5 @@ core.setOutput("cache-hit", cacheHit);
 
 core.info(`Running 'fontist update'...`);
 await $({ stdio: "inherit" })`fontist update`;
+
+process.exit();
