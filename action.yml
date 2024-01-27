@@ -24,17 +24,6 @@ outputs:
     value: ${{ steps.setup-fontist.outputs.cache-hit }}
 
 runs:
-  using: composite
-  steps:
-    - shell: bash
-      run: |
-        mkdir -p "$RUNNER_TEMP/setup-fontist"
-        touch "$RUNNER_TEMP/setup-fontist/GITHUB_PATH"
-    - uses: ruby/setup-ruby@v1
-      with:
-        ruby-version: ruby
-      env:
-        GITHUB_PATH: ${{ runner.temp }}/setup-fontist/GITHUB_PATH
-    - id: setup-fontist
-      uses: ./setup-fontist
-      with: ${{ inputs }}
+  using: node20
+  main: dist/main.js
+  post: dist/post.js
