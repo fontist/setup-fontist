@@ -14,6 +14,8 @@ inputs:
     default: ${{ github.server_url == 'https://github.com' && github.token || '' }}
   cache:
     default: true
+  cache-dependency-path:
+    default: manifest.y{a,}ml
 
 outputs:
   fontist-version:

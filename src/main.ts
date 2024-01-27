@@ -104,12 +104,21 @@ core.info(`✅ Fontist v${version} installed!`);
 
 if (workflowCache) {
   const cacheDir = join(process.env.HOME!, ".fontist");
-  const primaryKey = `fontist-${version}-home-fontist`;
-  core.saveState("cache-primary-key", primaryKey);
-  core.info(`Attempting to restore ${cacheDir} from ${primaryKey}`);
-  const hitKey = await cache.restoreCache([cacheDir], primaryKey);
-  core.saveState("cache-hit", hitKey);
-  cacheHit ||= !!hitKey;
+  const hash = await glob.hashFiles(core.getInput("cache-dependency-path"))
+  if (hash) {
+    const primaryKey = `fontist-${version}-home-fontist-${hash}`;
+    core.saveState("cache-primary-key", primaryKey);
+    core.info(`Attempting to restore ${cacheDir} from ${primaryKey}`);
+    const hitKey = await cache.restoreCache([cacheDir], primaryKey);
+    core.saveState("cache-hit", hitKey);
+    if (hitKey) {
+      core.info(`Restored ${cacheDir} from workflow cache: ${hitKey}`);
+      cacheHit = true;
+    }
+  } else {
+    core.info(`No manifest files found, skipping cache restore`);
+    core.info(`To enable cache, set the cache-dependency-path input OR create a manifest.yml file`)
+  }
 }
 
 core.setOutput("cache-hit", cacheHit);
@@ -117,4 +126,5 @@ core.setOutput("cache-hit", cacheHit);
 core.info(`Running 'fontist update'...`);
 await $({ stdio: "inherit" })`fontist update`;
 
+// This is an issue with '@actions/cache' somehow? https://github.com/actions/toolkit/issues/658
 process.exit();
