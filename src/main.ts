@@ -10,13 +10,6 @@ import { chmod, cp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import * as cache from "@actions/cache"
 import * as glob from "@actions/glob"
 
-const githubPath = await readFile(
-  join(process.env.RUNNER_TEMP!, "setup-fontist/GITHUB_PATH"),
-  "utf8",
-);
-const githubPathItems = githubPath.trimEnd().split(/\r?\n/);
-process.env.PATH = [process.env.PATH, ...githubPathItems].join(delimiter);
-
 const token = core.getInput("fontist-token");
 const octokit = token
   ? github.getOctokit(token)
@@ -78,7 +71,7 @@ core.info(`✅ Fontist v${version} installed!`);
 
 if (core.getBooleanInput("cache")) {
   const cacheDir = join(process.env.HOME!, ".fontist")
-  const primaryKey = `fontist-${github.context.ref}`
+  const primaryKey = `fontist-home`
   core.saveState("cache-primary-key", primaryKey)
   const hitKey = await cache.restoreCache([cacheDir], primaryKey)
   core.saveState("cache-hit", hitKey)

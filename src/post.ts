@@ -9,5 +9,5 @@ if (core.getBooleanInput("cache")) {
   const primaryKey = core.getState("cache-primary-key");
   const hitKey = core.getState("cache-hit-key");
   core.info(`Saving ${cacheDir} with key ${primaryKey}`);
-  cache.saveCache([cacheDir], primaryKey);
+  await cache.saveCache([cacheDir], primaryKey);
 }
