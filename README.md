@@ -65,6 +65,8 @@ This action tries to restore the result of `gem install fontist` from both the `
 **How do I test it?** \
 Open a PR (even a draft one works) and some magic GitHub Actions will run to test your changes.
 
+Note that since [Bun doesn't support Windows yet](https://github.com/oven-sh/bun/issues/43) we can't run the `bun build` command on Windows runners. Don't worry! The action should still work ok since Bun is only used for the build step; it runs using `node <the-js-file>` via `using: node20` in both testing and releases. Once Bun adds Windows support remember to add back the Windows tests. 😉
+
 ## Contributions
 
 This GitHub Action was originally created by @jcbhmr for the
