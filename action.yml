@@ -13,8 +13,10 @@ inputs:
     description: The GitHub token to use when fetching the version list from fontist/fontist. You shouldn't have to touch this. The default is the 'github.token' if you're on github.com or unauthenticated (rate limited) if you're not on github.com.
     default: ${{ github.server_url == 'https://github.com' && github.token || '' }}
   cache:
+    description: Whether or not to use @actions/cache to cache things in the GitHub workflow cache. This is enabled by default.
     default: true
   cache-dependency-path:
+    description: A multiline list of globs to use to derive the '~/.fontist' cache key. The default is 'manifest.yml' and 'manifest.yaml'. If no files are matched at runtime then the '~/.fontist' folder will not be cached.
     default: manifest.y{a,}ml
 
 outputs:

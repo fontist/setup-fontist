@@ -44,6 +44,10 @@ jobs:
 
 - **`fontist-token`:** The GitHub token to use when fetching the version list from fontist/fontist. You shouldn't have to touch this. The default is the `github.token` if you're on github.com or unauthenticated (rate limited) if you're not on github.com.
 
+- **`cache`:** Whether or not to use [@actions/cache](https://www.npmjs.com/package/@actions/cache) to cache things in the GitHub workflow cache. This is enabled by default.
+
+- **`cache-dependency-path`:** A multiline list of globs to use to derive the `~/.fontist` cache key. The default is `manifest.yml` and `manifest.yaml`. If no files are matched at runtime then the `~/.fontist` folder will not be cached.
+
 ### Outputs
 
 - **`fontist-version`:** The version of Fontist that was installed. This will be something like `1.10.0` or similar.
@@ -56,7 +60,7 @@ jobs:
 ![Node.js](https://img.shields.io/static/v1?style=for-the-badge&message=Node.js&color=339933&logo=Node.js&logoColor=FFFFFF&label=)
 ![Ruby](https://img.shields.io/static/v1?style=for-the-badge&message=Ruby&color=CC342D&logo=Ruby&logoColor=FFFFFF&label=)
 
-This action tries to restore the result of `gem install fontist` from both the `$RUNNER_TOOL_CACHE` as well as the workflow cache via [@actions/cache](https://www.npmjs.com/package/@actions/cache).
+This action tries to restore the result of `gem install fontist` from both the `$RUNNER_TOOL_CACHE` as well as the workflow cache via [@actions/cache](https://www.npmjs.com/package/@actions/cache). It then tries to restore the `~/.fontist` folder local cache from the workflow cache.
 
 **How do I test it?** \
 Open a PR (even a draft one works) and some magic GitHub Actions will run to test your changes.
