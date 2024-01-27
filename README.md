@@ -15,7 +15,8 @@
 🟦 Works with Windows \
 🐧 Works with Ubuntu \
 🍎 Works with macOS \
-⚡ Caches installation in `$RUNNER_TOOL_CACHE`
+⚡ Caches installation in `$RUNNER_TOOL_CACHE` and/ior the workflow cache \
+📐 Caches `~/.fontist` font installs by default using `manifest.yml`
 
 ## Usage
 
@@ -55,7 +56,10 @@ jobs:
 ![Node.js](https://img.shields.io/static/v1?style=for-the-badge&message=Node.js&color=339933&logo=Node.js&logoColor=FFFFFF&label=)
 ![Ruby](https://img.shields.io/static/v1?style=for-the-badge&message=Ruby&color=CC342D&logo=Ruby&logoColor=FFFFFF&label=)
 
-This action uses a hack to install Ruby using [ruby/setup-ruby](https://github.com/ruby/setup-ruby) but without adding it to the `$PATH`. Then, we run `gem install fontist` using that un-`$PATH`-ed Ruby version and expose only the `fontist` executable. The action is bundled using [Bun](https://bun.sh/) to a single file on each GitHub release.
+This action tries to restore the result of `gem install fontist` from both the `$RUNNER_TOOL_CACHE` as well as the workflow cache via [@actions/cache](https://www.npmjs.com/package/@actions/cache).
+
+**How do I test it?** \
+Open a PR (even a draft one works) and some magic GitHub Actions will run to test your changes.
 
 ## Contributions
 
