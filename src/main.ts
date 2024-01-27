@@ -84,7 +84,7 @@ core.info(`✅ Fontist v${version} installed!`);
 
 if (core.getBooleanInput("cache")) {
   const cacheDir = join(process.env.HOME!, ".fontist");
-  const primaryKey = `fontist-home`;
+  const primaryKey = `fontist-${version}-home-fontist`;
   core.saveState("cache-primary-key", primaryKey);
   const hitKey = await cache.restoreCache([cacheDir], primaryKey);
   core.saveState("cache-hit", hitKey);
