@@ -31,50 +31,70 @@ const version = semver.maxSatisfying(
 core.info(`Resolved version: v${version}`);
 if (!version) throw new DOMException(`${versionRaw} resolved to ${version}`);
 
-let found = tc.find("fontist", version);
-let cacheHit = !!found;
-if (!found) {
-  const cacheDir = join(process.env.HOME!, ".fontist-tool-cache");
-  const primaryKey = `fontist-${version}-tool-cache`;
-  const hitKey = core.getBooleanInput("cache") && await cache.restoreCache([cacheDir], primaryKey);
-  cacheHit ||= !!hitKey;
-  if (hitKey) {
-    found = cacheDir;
-    found = await tc.cacheDir(cacheDir, "fontist", version);
-  } else {
-    let cacheDir = join(process.env.RUNNER_TEMP!, Math.random().toString());
-    await mkdir(cacheDir);
-    cacheDir = await tc.cacheDir(cacheDir, "fontist", version);
-    try {
-      await $({
-        stdio: "inherit",
-      })`gem install fontist --version ${version} --no-document --install-dir ${join(cacheDir, "install-dir")} --bindir ${join(cacheDir, "bindir")}`;
+const workflowCache = core.getBooleanInput("cache");
+if (workflowCache) {
+  core.info(`Using @actions/cache`);
+}
 
-      await mkdir(join(cacheDir, "bin"));
+let found: string;
+let cacheHit = false;
+install_fontist: {
+  found = tc.find("fontist", version);
+  if (found) {
+    core.info(`Found Fontist in tool cache: ${found}`);
+    cacheHit = true;
+    break install_fontist;
+  }
 
-      const bash = `\
+  let cacheDir = join(process.env.RUNNER_TEMP!, Math.random().toString());
+  await mkdir(cacheDir);
+  cacheDir = await tc.cacheDir(cacheDir, "fontist", version);
+  try {
+    if (workflowCache) {
+      const primaryKey = `fontist-${version}-tool-cache`;
+      core.info(`Attempting to restore from ${primaryKey}`)
+      const hitKey = await cache.restoreCache([cacheDir], primaryKey);
+      if (hitKey) {
+        core.info(`Restored Fontist from workflow cache: ${cacheDir}`)
+        found = cacheDir;
+        cacheHit = true;
+        break install_fontist;
+      }
+    }
+
+    core.info(`Using RubyGems to install Fontist v${version}...`)
+    core.info(`Installing to ${join(cacheDir, "install-dir")}`)
+    core.info(`Installing binaries to ${join(cacheDir, "bindir")}`)
+    await $({
+      stdio: "inherit",
+    })`gem install fontist --version ${version} --no-document --install-dir ${join(cacheDir, "install-dir")} --bindir ${join(cacheDir, "bindir")}`;
+
+    core.info(`Creating wrapper scripts in ${join(cacheDir, "bin")}...`)
+    await mkdir(join(cacheDir, "bin"));
+
+    const bash = `\
 #!/bin/bash
 export GEM_PATH=${join(cacheDir, "install-dir")}
 export GEM_HOME=${join(cacheDir, "install-dir")}
 exec ${join(cacheDir, "bindir", "fontist")} "$@"`;
-      await writeFile(join(cacheDir, "bin", "fontist"), bash);
-      await chmod(join(cacheDir, "bin", "fontist"), 0o755);
+    await writeFile(join(cacheDir, "bin", "fontist"), bash);
+    await chmod(join(cacheDir, "bin", "fontist"), 0o755);
 
-      const cmd = `\
+    const cmd = `\
 @echo off\r
 set GEM_PATH=${join(cacheDir, "install-dir")}\r
 set GEM_HOME=${join(cacheDir, "install-dir")}\r
 ${join(cacheDir, "bindir", "fontist")} %*`;
-      await writeFile(join(cacheDir, "bin", "fontist.cmd"), cmd);
-    } catch (error) {
-      core.error(`Failure inside setup block. Removing tool cache folder.`);
-      await rm(cacheDir, { recursive: true, force: true });
-      throw error;
-    }
-    found = cacheDir;
-    if (core.getBooleanInput("cache")) {
-      await cache.saveCache([found], primaryKey);
-    }
+    await writeFile(join(cacheDir, "bin", "fontist.cmd"), cmd);
+
+  } catch (error) {
+    await rm(cacheDir, { recursive: true, force: true });
+    throw error;
+  }
+
+  if (workflowCache) {
+    core.info(`Trying to stash ${cacheDir} in workflow cache`)
+    await cache.saveCache([cacheDir], `fontist-${version}-tool-cache`);
   }
 }
 
@@ -82,10 +102,11 @@ core.addPath(join(found, "bin"));
 core.setOutput("fontist-version", version);
 core.info(`✅ Fontist v${version} installed!`);
 
-if (core.getBooleanInput("cache")) {
+if (workflowCache) {
   const cacheDir = join(process.env.HOME!, ".fontist");
   const primaryKey = `fontist-${version}-home-fontist`;
   core.saveState("cache-primary-key", primaryKey);
+  core.info(`Attempting to restore ${cacheDir} from ${primaryKey}`);
   const hitKey = await cache.restoreCache([cacheDir], primaryKey);
   core.saveState("cache-hit", hitKey);
   cacheHit ||= !!hitKey;
