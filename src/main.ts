@@ -9,6 +9,7 @@ import { delimiter, join } from "node:path";
 import { chmod, cp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import * as cache from "@actions/cache";
 import * as glob from "@actions/glob";
+import assert from "node:assert/strict";
 
 const token = core.getInput("fontist-token");
 const octokit = token
@@ -19,83 +20,78 @@ const octokit = token
     });
 
 const versionRaw = core.getInput("fontist-version");
+const versionRange = versionRaw === "latest" ? "*" : versionRaw;
 const tags = await octokit.paginate(octokit.rest.repos.listTags, {
   owner: "fontist",
   repo: "fontist",
 });
 const versions = tags.map((tag) => tag.name.slice(1));
-const version = semver.maxSatisfying(
-  versions,
-  versionRaw === "latest" ? "*" : versionRaw,
-)!;
+const version = semver.maxSatisfying(versions, versionRange);
+assert(
+  version,
+  `${versionRange} didn't match any ${JSON.stringify(versions)}}`,
+);
 core.info(`Resolved version: v${version}`);
-if (!version) throw new DOMException(`${versionRaw} resolved to ${version}`);
 
 const workflowCache = core.getBooleanInput("cache");
-if (workflowCache) {
-  core.info(`Using @actions/cache`);
+const installationKey = `fontist-${version}-installation`;
+
+let found = tc.find("fontist", version);
+let cacheHit = !!found;
+if (!found) {
+  core.info(`Fontist v${version} not found in tool cache.`);
+
+  const tempDir = join(process.env.RUNNER_TEMP!, Math.random().toString());
+  await mkdir(tempDir);
+
+  core.info(
+    `Attempting to restore Fontist installatioin from workflow cache: ${installationKey}`,
+  );
+  const hitKey = await cache.restoreCache([tempDir], installationKey);
+  if (hitKey) {
+    core.info(`Restored Fontist installation from workflow cache: ${tempDir}`);
+    found = await tc.cacheDir(tempDir, "fontist", version);
+  }
+}
+cacheHit ||= !!found;
+
+if (!found) {
+  core.info(`Fontist v${version} not found in workflow cache.`);
+
+  const tempDir = join(process.env.RUNNER_TEMP!, Math.random().toString());
+  await mkdir(tempDir);
+
+  core.info(`Using RubyGems to install Fontist v${version}...`);
+  core.info(`Installing to ${join(tempDir, "install-dir")}`);
+  core.info(`Installing binaries to ${join(tempDir, "bindir")}`);
+  await $({
+    stdio: "inherit",
+  })`gem install fontist --version ${version} --no-document --install-dir ${join(tempDir, "install-dir")} --bindir ${join(tempDir, "bindir")}`;
+
+  core.info(`Creating wrapper scripts in ${join(tempDir, "bin")}...`);
+  await mkdir(join(tempDir, "bin"));
+
+  const bash = `\
+#!/bin/bash
+export GEM_PATH='${join(tempDir, "install-dir")}'
+export GEM_HOME='${join(tempDir, "install-dir")}'
+exec ${join(tempDir, "bindir", "fontist")} "$@"`;
+  await writeFile(join(tempDir, "bin", "fontist"), bash);
+  await chmod(join(tempDir, "bin", "fontist"), 0o755);
+
+  const cmd = `\
+@echo off\r
+set GEM_PATH=${join(tempDir, "install-dir")}\r
+set GEM_HOME=${join(tempDir, "install-dir")}\r
+${join(tempDir, "bindir", "fontist")} %*`;
+  await writeFile(join(tempDir, "bin", "fontist.cmd"), cmd);
+
+  found = await tc.cacheDir(tempDir, "fontist", version);
 }
 
-let found: string;
-let cacheHit = false;
-install_fontist: {
-  found = tc.find("fontist", version);
-  if (found) {
-    core.info(`Found Fontist in tool cache: ${found}`);
-    cacheHit = true;
-    break install_fontist;
-  }
-
-  let cacheDir = join(process.env.RUNNER_TEMP!, Math.random().toString());
-  await mkdir(cacheDir);
-  cacheDir = await tc.cacheDir(cacheDir, "fontist", version);
-  try {
-    if (workflowCache) {
-      const primaryKey = `fontist-${version}-tool-cache`;
-      core.info(`Attempting to restore from ${primaryKey}`)
-      const hitKey = await cache.restoreCache([cacheDir], primaryKey);
-      if (hitKey) {
-        core.info(`Restored Fontist from workflow cache: ${cacheDir}`)
-        found = cacheDir;
-        cacheHit = true;
-        break install_fontist;
-      }
-    }
-
-    core.info(`Using RubyGems to install Fontist v${version}...`)
-    core.info(`Installing to ${join(cacheDir, "install-dir")}`)
-    core.info(`Installing binaries to ${join(cacheDir, "bindir")}`)
-    await $({
-      stdio: "inherit",
-    })`gem install fontist --version ${version} --no-document --install-dir ${join(cacheDir, "install-dir")} --bindir ${join(cacheDir, "bindir")}`;
-
-    core.info(`Creating wrapper scripts in ${join(cacheDir, "bin")}...`)
-    await mkdir(join(cacheDir, "bin"));
-
-    const bash = `\
-#!/bin/bash
-export GEM_PATH=${join(cacheDir, "install-dir")}
-export GEM_HOME=${join(cacheDir, "install-dir")}
-exec ${join(cacheDir, "bindir", "fontist")} "$@"`;
-    await writeFile(join(cacheDir, "bin", "fontist"), bash);
-    await chmod(join(cacheDir, "bin", "fontist"), 0o755);
-
-    const cmd = `\
-@echo off\r
-set GEM_PATH=${join(cacheDir, "install-dir")}\r
-set GEM_HOME=${join(cacheDir, "install-dir")}\r
-${join(cacheDir, "bindir", "fontist")} %*`;
-    await writeFile(join(cacheDir, "bin", "fontist.cmd"), cmd);
-
-  } catch (error) {
-    await rm(cacheDir, { recursive: true, force: true });
-    throw error;
-  }
-
-  if (workflowCache) {
-    core.info(`Trying to stash ${cacheDir} in workflow cache`)
-    await cache.saveCache([cacheDir], `fontist-${version}-tool-cache`);
-  }
+if (workflowCache) {
+  core.info(`Caching Fontist installation in workflow cache...`);
+  await cache.saveCache([found], installationKey);
 }
 
 core.addPath(join(found, "bin"));
@@ -104,27 +100,23 @@ core.info(`✅ Fontist v${version} installed!`);
 
 if (workflowCache) {
   const cacheDir = join(process.env.HOME!, ".fontist");
-  const hash = await glob.hashFiles(core.getInput("cache-dependency-path"))
+  const cacheDependencyPath = core.getInput("cache-dependency-path");
+  const hash = await glob.hashFiles(cacheDependencyPath);
   if (hash) {
-    const primaryKey = `fontist-${version}-home-fontist-${hash}`;
-    core.saveState("cache-primary-key", primaryKey);
-    core.info(`Attempting to restore ${cacheDir} from ${primaryKey}`);
-    const hitKey = await cache.restoreCache([cacheDir], primaryKey);
-    core.saveState("cache-hit", hitKey);
-    if (hitKey) {
-      core.info(`Restored ${cacheDir} from workflow cache: ${hitKey}`);
-      cacheHit = true;
-    }
+    const dataKey = `fontist-${version}-data-${hash}`;
+    core.saveState("cache-data-key", dataKey);
+    core.info(
+      `Attempting to restore ~/.fontist from workflow cache: ${dataKey}`,
+    );
+    const hitKey = await cache.restoreCache([cacheDir], dataKey);
+    cacheHit ||= !!hitKey;
   } else {
-    core.info(`No manifest files found, skipping cache restore`);
-    core.info(`To enable cache, set the cache-dependency-path input OR create a manifest.yml file`)
+    core.info(`No files matched ${cacheDependencyPath}`);
   }
 }
-
-core.setOutput("cache-hit", cacheHit);
 
 core.info(`Running 'fontist update'...`);
 await $({ stdio: "inherit" })`fontist update`;
 
-// This is an issue with '@actions/cache' somehow? https://github.com/actions/toolkit/issues/658
+// '@actions/cache' hangs unless we do this.
 process.exit();
