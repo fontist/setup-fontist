@@ -19,13 +19,14 @@ const octokit = token
       auth: { reason: "no 'fontist-token' input" },
     });
 
-const versionRaw = core.getInput("fontist-version");
 const versionRange = versionRaw === "latest" ? "*" : versionRaw;
 const tags = await octokit.paginate(octokit.rest.repos.listTags, {
   owner: "fontist",
   repo: "fontist",
 });
 const versions = tags.map((tag) => tag.name.slice(1));
+
+const versionRaw = core.getInput("fontist-version");
 const version = semver.maxSatisfying(versions, versionRange);
 assert(
   version,
@@ -33,11 +34,13 @@ assert(
 );
 core.info(`Resolved version: v${version}`);
 
-const workflowCache = core.getBooleanInput("cache");
-const installationKey = `fontist-${version}-installation`;
-
 let found = tc.find("fontist", version);
 let cacheHit = !!found;
+
+const workflowCache = core.getBooleanInput("cache");
+const keyPrefix = `fontist-${version}-${process.env.RUNNER_OS}`
+const installationKey = `${keyPrefix}-installation`;
+
 if (!found) {
   core.info(`Fontist v${version} not found in tool cache.`);
 
@@ -61,30 +64,15 @@ if (!found) {
   const tempDir = join(process.env.RUNNER_TEMP!, Math.random().toString());
   await mkdir(tempDir);
 
+  const installDir = join(tempDir, "install-dir");
+  const bindir = join(tempDir, "bindir");
+
   core.info(`Using RubyGems to install Fontist v${version}...`);
-  core.info(`Installing to ${join(tempDir, "install-dir")}`);
-  core.info(`Installing binaries to ${join(tempDir, "bindir")}`);
+  core.info(`Installing to ${installDir}`);
+  core.info(`Installing binaries to ${bindir}`);
   await $({
     stdio: "inherit",
-  })`gem install fontist --version ${version} --no-document --install-dir ${join(tempDir, "install-dir")} --bindir ${join(tempDir, "bindir")}`;
-
-  core.info(`Creating wrapper scripts in ${join(tempDir, "bin")}...`);
-  await mkdir(join(tempDir, "bin"));
-
-  const bash = `\
-#!/bin/bash
-export GEM_PATH='${join(tempDir, "install-dir")}'
-export GEM_HOME='${join(tempDir, "install-dir")}'
-exec ${join(tempDir, "bindir", "fontist")} "$@"`;
-  await writeFile(join(tempDir, "bin", "fontist"), bash);
-  await chmod(join(tempDir, "bin", "fontist"), 0o755);
-
-  const cmd = `\
-@echo off\r
-set GEM_PATH=${join(tempDir, "install-dir")}\r
-set GEM_HOME=${join(tempDir, "install-dir")}\r
-${join(tempDir, "bindir", "fontist")} %*`;
-  await writeFile(join(tempDir, "bin", "fontist.cmd"), cmd);
+  })`gem install fontist --version ${version} --no-document --install-dir ${installDir} --bindir ${bindir}`;
 
   found = await tc.cacheDir(tempDir, "fontist", version);
 }
@@ -94,7 +82,27 @@ if (workflowCache) {
   await cache.saveCache([found], installationKey);
 }
 
-core.addPath(join(found, "bin"));
+const bindir = join(found, "bindir");
+const wrappers = join(found, "wrappers");
+core.info(`Creating wrapper scripts in ${wrappers}...`);
+await mkdir(wrappers);
+
+const bash = `\
+#!/bin/bash
+export GEM_PATH='${found}'
+export GEM_HOME='${found}'
+exec '${join(bindir, "fontist")}' "$@"`;
+await writeFile(join(wrappers, "fontist"), bash);
+await chmod(join(wrappers, "fontist"), 0o755);
+
+const cmd = `\
+@echo off\r
+set GEM_PATH=${found}\r
+set GEM_HOME=${found}\r
+${join(bindir, "fontist")} %*`;
+await writeFile(join(wrappers, "fontist.cmd"), cmd);
+
+core.addPath(wrappers);
 core.setOutput("fontist-version", version);
 core.info(`✅ Fontist v${version} installed!`);
 
@@ -103,8 +111,8 @@ if (workflowCache) {
   const cacheDependencyPath = core.getInput("cache-dependency-path");
   const hash = await glob.hashFiles(cacheDependencyPath);
   if (hash) {
-    const dataKey = `fontist-${version}-data-${hash}`;
-    core.saveState("cache-data-key", dataKey);
+    const dataKey = `${keyPrefix}-data-${hash}`;
+    core.saveState("data-key", dataKey);
     core.info(
       `Attempting to restore ~/.fontist from workflow cache: ${dataKey}`,
     );
