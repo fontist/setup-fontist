@@ -19,7 +19,6 @@ const octokit = token
       auth: { reason: "no 'fontist-token' input" },
     });
 
-const versionRange = versionRaw === "latest" ? "*" : versionRaw;
 const tags = await octokit.paginate(octokit.rest.repos.listTags, {
   owner: "fontist",
   repo: "fontist",
@@ -27,6 +26,7 @@ const tags = await octokit.paginate(octokit.rest.repos.listTags, {
 const versions = tags.map((tag) => tag.name.slice(1));
 
 const versionRaw = core.getInput("fontist-version");
+const versionRange = versionRaw === "latest" ? "*" : versionRaw;
 const version = semver.maxSatisfying(versions, versionRange);
 assert(
   version,
