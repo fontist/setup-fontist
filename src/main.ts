@@ -76,29 +76,30 @@ if (!found) {
 
   found = await tc.cacheDir(tempDir, "fontist", version);
 }
+const installDir = join(found, "install-dir")
+const bindir = join(found, "bindir");
 
 if (workflowCache) {
   core.info(`Caching Fontist installation in workflow cache...`);
   await cache.saveCache([found], installationKey);
 }
 
-const bindir = join(found, "bindir");
 const wrappers = join(found, "wrappers");
 core.info(`Creating wrapper scripts in ${wrappers}...`);
 await mkdir(wrappers);
 
 const bash = `\
 #!/bin/bash
-export GEM_PATH='${found}'
-export GEM_HOME='${found}'
+export GEM_PATH='${installDir}'
+export GEM_HOME='${installDir}'
 exec '${join(bindir, "fontist")}' "$@"`;
 await writeFile(join(wrappers, "fontist"), bash);
 await chmod(join(wrappers, "fontist"), 0o755);
 
 const cmd = `\
 @echo off\r
-set GEM_PATH=${found}\r
-set GEM_HOME=${found}\r
+set GEM_PATH=${installDir}\r
+set GEM_HOME=${installDir}\r
 ${join(bindir, "fontist")} %*`;
 await writeFile(join(wrappers, "fontist.cmd"), cmd);
 
