@@ -35,4 +35,7 @@ jobs:
       - uses: ./
         with:
           cache-dependency-path: test.yml
+      - uses: ./
+        with:
+          cache-dependency-path: test.yml
       - run: fontist manifest-install test.yml
