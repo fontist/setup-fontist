@@ -5,7 +5,7 @@
 <table align=center><td>
 
 ```yml
-- uses: fontist/setup-fontist@v1
+- uses: fontist/setup-fontist@v2
 - run: fontist install "Fira Code"
 ```
 
@@ -32,7 +32,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: fontist/setup-fontist@v1
+      - uses: fontist/setup-fontist@v2
       - run: fontist install "Fira Code"
 ```
 
