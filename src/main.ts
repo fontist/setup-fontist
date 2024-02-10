@@ -86,7 +86,7 @@ if (workflowCache) {
 
 const wrappers = join(found, "wrappers");
 core.info(`Creating wrapper scripts in ${wrappers}...`);
-await mkdir(wrappers);
+await mkdir(wrappers, { recursive: true });
 
 const bash = `\
 #!/bin/bash
