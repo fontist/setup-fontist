@@ -6,12 +6,12 @@ import { join } from "node:path";
 
 if (core.getBooleanInput("cache")) {
   const cacheDir = join(process.env.HOME!, ".fontist");
-  const dataKey = core.getState("cache-data-key");
+  const dataKey = core.getState("data-key");
   if (dataKey) {
     core.info(`Saving ${cacheDir} with key ${dataKey}`);
     await cache.saveCache([cacheDir], dataKey);
   } else {
-    core.info(`No cache-data-key. Skipping save.`);
+    core.info(`No 'data-key' value. Skipping save.`);
   }
 }
 
