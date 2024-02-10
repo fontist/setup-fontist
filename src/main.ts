@@ -41,7 +41,9 @@ const workflowCache = core.getBooleanInput("cache");
 const keyPrefix = `fontist-${version}-${process.env.RUNNER_OS}`
 const installationKey = `${keyPrefix}-installation`;
 
-if (!found) {
+if (found) {
+  core.info(`Fontist v${version} found in tool cache!`);
+} else {
   core.info(`Fontist v${version} not found in tool cache.`);
 
   const tempDir = join(process.env.RUNNER_TEMP!, Math.random().toString());
