@@ -50,7 +50,7 @@ if (found) {
   await mkdir(tempDir);
 
   core.info(
-    `Attempting to restore Fontist installatioin from workflow cache: ${installationKey}`,
+    `Attempting to restore Fontist installation from workflow cache: ${installationKey}`,
   );
   const hitKey = await cache.restoreCache([tempDir], installationKey);
   if (hitKey) {
