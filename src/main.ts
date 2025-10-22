@@ -2,8 +2,6 @@
 import { $ } from "execa";
 import * as core from "@actions/core";
 import * as tc from "@actions/tool-cache";
-import * as github from "@actions/github";
-import { createUnauthenticatedAuth } from "@octokit/auth-unauthenticated";
 import * as semver from "semver";
 import { delimiter, join } from "node:path";
 import { chmod, cp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
@@ -11,19 +9,17 @@ import * as cache from "@actions/cache";
 import * as glob from "@actions/glob";
 import assert from "node:assert/strict";
 
-const token = core.getInput("fontist-token");
-const octokit = token
-  ? github.getOctokit(token)
-  : github.getOctokit(undefined!, {
-      authStrategy: createUnauthenticatedAuth,
-      auth: { reason: "no 'fontist-token' input" },
-    });
-
-const tags = await octokit.paginate(octokit.rest.repos.listTags, {
-  owner: "fontist",
-  repo: "fontist",
-});
-const versions = tags.map((tag) => tag.name.slice(1));
+const response = await fetch("https://rubygems.org/api/v1/versions/fontist.json");
+if (response.status !== 200) {
+  throw new Error(`${response.url} returned ${response.status}`);
+}
+if (!response.headers.get("Content-Type")?.includes("application/json")) {
+  throw new Error(`${response.url} did not return application/json`);
+}
+const json = await response.json() as { prerelease: boolean; number: string }[];
+const versions = json
+  .filter((entry) => !entry.prerelease)
+  .map((entry) => entry.number);
 
 const versionRaw = core.getInput("fontist-version");
 const versionRange = versionRaw === "latest" ? "*" : versionRaw;
