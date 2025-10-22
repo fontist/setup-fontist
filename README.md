@@ -42,8 +42,6 @@ jobs:
 
 - **`fontist-version`:** The version of Fontist to install. This can be an exact version lile `1.10.0` or a semver range such as `1.x` or `~1.15.0`. The default value is `latest`.
 
-- **`fontist-token`:** The GitHub token to use when fetching the version list from fontist/fontist. You shouldn't have to touch this. The default is the `github.token` if you're on github.com or unauthenticated (rate limited) if you're not on github.com.
-
 - **`cache`:** Whether or not to use [@actions/cache](https://www.npmjs.com/package/@actions/cache) to cache things in the GitHub workflow cache. This is enabled by default.
 
 - **`cache-dependency-path`:** A multiline list of globs to use to derive the `~/.fontist` cache key. The default is `manifest.yml` and `manifest.yaml`. If no files are matched at runtime then the `~/.fontist` folder will not be cached.
