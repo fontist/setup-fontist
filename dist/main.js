@@ -64478,6 +64478,13 @@ function saveCacheV2(paths_1, key_1, options_1) {
 
 // src/main.ts
 import assert5 from "node:assert/strict";
+var githubToken = getInput("github-token");
+if (githubToken) {
+  info("Configuring git to use GitHub token for github.com...");
+  await $`git config --global credential.helper store`;
+  await $`echo https://x-access-token:${githubToken}@github.com >> ~/.git-credentials`;
+  await $`git config --global url.https://x-access-token:${githubToken}@github.com/.insteadOf https://github.com/`;
+}
 var response = await fetch("https://rubygems.org/api/v1/versions/fontist.json");
 if (response.status !== 200) {
   throw new Error(`${response.url} returned ${response.status}`);
@@ -64570,5 +64577,17 @@ try {
   const formulasDir = join8(process.env.HOME, ".fontist", "versions", "v4", "formulas");
   await rm2(formulasDir, { recursive: true, force: true });
   await $({ stdio: "inherit" })`fontist update`;
+}
+var formulaRepos = getInput("formula-repos");
+if (formulaRepos) {
+  const repos = formulaRepos.trim().split(`
+`).filter(Boolean);
+  for (const line of repos) {
+    const [name, url2] = line.trim().split(/\s+/, 2);
+    if (name && url2) {
+      info(`Setting up formula repository: ${name} -> ${url2}`);
+      await $({ stdio: "inherit" })`fontist repo setup ${name} ${url2}`;
+    }
+  }
 }
 process.exit();
