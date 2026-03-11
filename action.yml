@@ -9,6 +9,17 @@ inputs:
   fontist-version:
     description: The version of Fontist to install. This can be an exact version lile '1.10.0' or a semver range such as '1.x' or '~1.15.0'. The default value is 'latest'.
     default: latest
+  github-token:
+    description: GitHub token for accessing private formula repositories. Uses GITHUB_TOKEN by default.
+    default: ${{ github.token }}
+  formula-repos:
+    description: |
+      A multiline list of private Fontist formula repositories to set up.
+      Each line should be in format: NAME URL
+      Example:
+        acme https://github.com/acme/fontist-formulas.git
+        corp https://github.com/corp/fonts.git
+    default: ""
   cache:
     description: Whether or not to use @actions/cache to cache things in the GitHub workflow cache. This is enabled by default.
     default: true

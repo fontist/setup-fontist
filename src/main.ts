@@ -9,6 +9,17 @@ import * as cache from "@actions/cache";
 import * as glob from "@actions/glob";
 import assert from "node:assert/strict";
 
+// Configure git to use GitHub token for github.com
+const githubToken = core.getInput("github-token");
+if (githubToken) {
+  core.info("Configuring git to use GitHub token for github.com...");
+  // Set up git credential helper for github.com
+  await $`git config --global credential.helper store`;
+  await $`echo https://x-access-token:${githubToken}@github.com >> ~/.git-credentials`;
+  // Also configure for submodules and other git operations
+  await $`git config --global url.https://x-access-token:${githubToken}@github.com/.insteadOf https://github.com/`;
+}
+
 const response = await fetch("https://rubygems.org/api/v1/versions/fontist.json");
 if (response.status !== 200) {
   throw new Error(`${response.url} returned ${response.status}`);
@@ -130,6 +141,19 @@ try {
   const formulasDir = join(process.env.HOME!, ".fontist", "versions", "v4", "formulas");
   await rm(formulasDir, { recursive: true, force: true });
   await $({ stdio: "inherit" })`fontist update`;
+}
+
+// Set up private formula repositories
+const formulaRepos = core.getInput("formula-repos");
+if (formulaRepos) {
+  const repos = formulaRepos.trim().split("\n").filter(Boolean);
+  for (const line of repos) {
+    const [name, url] = line.trim().split(/\s+/, 2);
+    if (name && url) {
+      core.info(`Setting up formula repository: ${name} -> ${url}`);
+      await $({ stdio: "inherit" })`fontist repo setup ${name} ${url}`;
+    }
+  }
 }
 
 // '@actions/cache' hangs unless we do this.
