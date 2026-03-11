@@ -127,7 +127,14 @@ if (workflowCache) {
 }
 
 core.info(`Running 'fontist update'...`);
-await $({ stdio: "inherit" })`fontist update`;
+try {
+  await $({ stdio: "inherit" })`fontist update`;
+} catch {
+  core.info("'fontist update' failed, clearing formulas and retrying...");
+  const formulasDir = join(process.env.HOME!, ".fontist", "versions", "v4", "formulas");
+  await rm(formulasDir, { recursive: true, force: true });
+  await $({ stdio: "inherit" })`fontist update`;
+}
 
 // '@actions/cache' hangs unless we do this.
 process.exit();
