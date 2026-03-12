@@ -23,6 +23,27 @@ This action installs [Fontist](https://www.fontist.org/), a cross-platform font 
 - 📐 Caches `~/.fontist` font installs by default using `manifest.yml`
 - 🔐 Supports private formula repositories with GitHub token authentication
 
+# Prerequisites
+
+This action requires **Ruby 3.2 or later**. Most GitHub-hosted runners include Ruby 3.2+ by default:
+
+| Runner | Default Ruby | Works out of the box? |
+|--------|-------------|----------------------|
+| `ubuntu-latest` (24.04), `ubuntu-24.04`, `ubuntu-24.04-arm` | 3.2+ | ✅ Yes |
+| `ubuntu-22.04`, `ubuntu-22.04-arm` | 3.0.2 | ❌ Needs setup-ruby |
+| `macos-latest`, `macos-15`, `macos-15-intel`, `macos-26` | 3.2+ | ✅ Yes |
+| `windows-latest`, `windows-2022`, `windows-2025` | Various | ❌ Needs setup-ruby |
+| `windows-11-arm` | N/A | ❌ Not supported |
+
+For runners that need a newer Ruby version, add `ruby/setup-ruby@v1` before this action:
+
+```yaml
+- uses: ruby/setup-ruby@v1
+  with:
+    ruby-version: "3.2"
+- uses: fontist/setup-fontist@v2
+```
+
 # Usage
 
 <!-- start usage -->
@@ -77,7 +98,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: fontist/setup-fontist@v2
       - run: fontist install "Fira Code"
 ```
@@ -177,6 +198,33 @@ permissions:
   actions: read  # for cache restore
   # actions: write  # for cache save (needed in some cases)
 ```
+
+# Troubleshooting
+
+## Ruby version too old
+
+If you see an error like `Ruby 3.2.0+ is required, but found Ruby 3.0.2`, your runner's default Ruby is too old. See the [Prerequisites](#prerequisites) section for details on which runners need `ruby/setup-ruby@v1`.
+
+## Windows native extension build failures
+
+On Windows runners, you may encounter errors like `Failed to build gem native extension` when installing fontist. This is a known Ruby issue on Windows with certain Ruby versions.
+
+**Workaround:** Install a specific Ruby version before using this action:
+
+```yaml
+- uses: ruby/setup-ruby@v1
+  with:
+    ruby-version: "3.4"
+- uses: fontist/setup-fontist@v2
+```
+
+See [issue #17](https://github.com/fontist/setup-fontist/issues/17) for more details.
+
+## Windows ARM not supported
+
+**Windows ARM (`windows-11-arm`) is not currently supported** because [Nokogiri](https://github.com/sparklemotion/nokogiri), a dependency of Fontist, does not provide native gems for Windows ARM. When Nokogiri adds ARM support, this action will work on Windows ARM runners.
+
+**Status:** We test Windows ARM in CI as an experimental job. When it test passes, it know Nokogiri has added Windows ARM support.
 
 # Development
 

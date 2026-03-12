@@ -27811,6 +27811,10 @@ function setOutput(name, value) {
   process.stdout.write(os5.EOL);
   issueCommand("set-output", { name }, toCommandValue(value));
 }
+function setFailed(message) {
+  process.exitCode = ExitCode.Failure;
+  error(message);
+}
 function isDebug() {
   return process.env["RUNNER_DEBUG"] === "1";
 }

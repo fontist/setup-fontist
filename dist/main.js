@@ -34980,6 +34980,10 @@ function setOutput(name, value) {
   process.stdout.write(os5.EOL);
   issueCommand("set-output", { name }, toCommandValue(value));
 }
+function setFailed(message) {
+  process.exitCode = ExitCode.Failure;
+  error(message);
+}
 function isDebug() {
   return process.env["RUNNER_DEBUG"] === "1";
 }
@@ -64478,6 +64482,41 @@ function saveCacheV2(paths_1, key_1, options_1) {
 
 // src/main.ts
 import assert5 from "node:assert/strict";
+var minRubyVersion = "3.2.0";
+try {
+  const { stdout: rubyVersionOutput } = await $`ruby --version`;
+  const match2 = rubyVersionOutput.match(/ruby (\d+\.\d+\.\d+)/);
+  if (!match2) {
+    setFailed(`Could not parse Ruby version from: ${rubyVersionOutput.trim()}`);
+    process.exit(1);
+  }
+  const version3 = match2[1];
+  if (semver4.lt(version3, minRubyVersion)) {
+    setFailed(`Ruby ${minRubyVersion}+ is required, but found Ruby ${version3}.
+
+` + `Please add this step before using fontist/setup-fontist:
+
+` + `  - uses: ruby/setup-ruby@v1
+` + `    with:
+` + `      ruby-version: "3.2"
+`);
+    process.exit(1);
+  }
+  info(`Found Ruby ${version3} (minimum required: ${minRubyVersion})`);
+} catch (error2) {
+  const errorMessage = error2 instanceof Error ? error2.message : String(error2);
+  if (errorMessage.includes("command not found") || errorMessage.includes("ENOENT")) {
+    setFailed(`Ruby is required but not installed.
+
+` + `Please add this step:
+` + `  - uses: ruby/setup-ruby@v1
+` + `    with:
+` + "      ruby-version: '3.2'");
+  } else {
+    setFailed("Ruby is required but not installed. Please ensure Ruby is available on the runner. " + "GitHub-hosted runners include Ruby by default. For self-hosted runners, install Ruby first.");
+  }
+  process.exit(1);
+}
 var githubToken = getInput("github-token");
 if (githubToken) {
   info("Configuring git to use GitHub token for github.com...");
@@ -64527,9 +64566,51 @@ if (!found) {
   info(`Using RubyGems to install Fontist v${version3}...`);
   info(`Installing to ${installDir}`);
   info(`Installing binaries to ${bindir}`);
-  await $({
-    stdio: "inherit"
-  })`gem install fontist --version ${version3} --no-document --install-dir ${installDir} --bindir ${bindir}`;
+  try {
+    await $({
+      stdio: "inherit"
+    })`gem install fontist --version ${version3} --no-document --install-dir ${installDir} --bindir ${bindir}`;
+  } catch (error2) {
+    const isWindows = process.platform === "win32";
+    const errorMessage = error2 instanceof Error ? error2.message : String(error2);
+    let helpMessage = `Failed to install Fontist v${version3} via RubyGems.
+
+`;
+    helpMessage += `Error: ${errorMessage}
+
+`;
+    if (isWindows && errorMessage.includes("native extension")) {
+      helpMessage += `This appears to be a Windows native extension build failure.
+`;
+      helpMessage += `Try installing a specific Ruby version first:
+
+`;
+      helpMessage += `  - uses: ruby/setup-ruby@v1
+`;
+      helpMessage += `    with:
+`;
+      helpMessage += `      ruby-version: "3.4"
+
+`;
+      helpMessage += `See https://github.com/fontist/setup-fontist/issues/17 for more details.`;
+    } else if (errorMessage.includes("conflicting dependencies") || errorMessage.includes("Gem::DependencyResolutionError")) {
+      helpMessage += `This appears to be a Ruby dependency conflict.
+`;
+      helpMessage += `Try installing a newer Ruby version first:
+
+`;
+      helpMessage += `  - uses: ruby/setup-ruby@v1
+`;
+      helpMessage += `    with:
+`;
+      helpMessage += `      ruby-version: "3.4"
+`;
+    } else {
+      helpMessage += `Please ensure Ruby and build tools are properly installed.`;
+    }
+    setFailed(helpMessage);
+    process.exit(1);
+  }
   found = await cacheDir(tempDir, "fontist", version3);
 }
 var installDir = join8(found, "install-dir");
@@ -64544,7 +64625,7 @@ await mkdir2(wrappers, { recursive: true });
 var bash = `#!/bin/bash
 export GEM_PATH='${installDir}'
 export GEM_HOME='${installDir}'
-exec '${join8(bindir, "fontist")}' "$@"`;
+exec ruby '${join8(bindir, "fontist")}' "$@"`;
 await writeFile2(join8(wrappers, "fontist"), bash);
 await chmod2(join8(wrappers, "fontist"), 493);
 var cmd = `@echo off\r

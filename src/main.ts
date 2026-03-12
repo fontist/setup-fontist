@@ -9,6 +9,50 @@ import * as cache from "@actions/cache";
 import * as glob from "@actions/glob";
 import assert from "node:assert/strict";
 
+// Check if Ruby is available and meets minimum version requirement
+const minRubyVersion = "3.2.0";
+try {
+  const { stdout: rubyVersionOutput } = await $`ruby --version`;
+  const match = rubyVersionOutput.match(/ruby (\d+\.\d+\.\d+)/);
+  if (!match) {
+    core.setFailed(
+      `Could not parse Ruby version from: ${rubyVersionOutput.trim()}`
+    );
+    process.exit(1);
+  }
+  const version = match[1];
+
+  if (semver.lt(version, minRubyVersion)) {
+    core.setFailed(
+      `Ruby ${minRubyVersion}+ is required, but found Ruby ${version}.\n\n` +
+      `Please add this step before using fontist/setup-fontist:\n\n` +
+      `  - uses: ruby/setup-ruby@v1\n` +
+      `    with:\n` +
+      `      ruby-version: "3.2"\n`
+    );
+    process.exit(1);
+  }
+
+  core.info(`Found Ruby ${version} (minimum required: ${minRubyVersion})`);
+} catch (error) {
+  const errorMessage = error instanceof Error ? error.message : String(error);
+  if (errorMessage.includes("command not found") || errorMessage.includes("ENOENT")) {
+    core.setFailed(
+      "Ruby is required but not installed.\n\n" +
+      "Please add this step:\n" +
+      "  - uses: ruby/setup-ruby@v1\n" +
+      "    with:\n" +
+      "      ruby-version: '3.2'"
+    );
+  } else {
+    core.setFailed(
+      "Ruby is required but not installed. Please ensure Ruby is available on the runner. " +
+      "GitHub-hosted runners include Ruby by default. For self-hosted runners, install Ruby first."
+    );
+  }
+  process.exit(1);
+}
+
 // Configure git to use GitHub token for github.com
 const githubToken = core.getInput("github-token");
 if (githubToken) {
@@ -79,9 +123,38 @@ if (!found) {
   core.info(`Using RubyGems to install Fontist v${version}...`);
   core.info(`Installing to ${installDir}`);
   core.info(`Installing binaries to ${bindir}`);
-  await $({
-    stdio: "inherit",
-  })`gem install fontist --version ${version} --no-document --install-dir ${installDir} --bindir ${bindir}`;
+
+  try {
+    await $({
+      stdio: "inherit",
+    })`gem install fontist --version ${version} --no-document --install-dir ${installDir} --bindir ${bindir}`;
+  } catch (error) {
+    const isWindows = process.platform === "win32";
+    const errorMessage = error instanceof Error ? error.message : String(error);
+
+    let helpMessage = `Failed to install Fontist v${version} via RubyGems.\n\n`;
+    helpMessage += `Error: ${errorMessage}\n\n`;
+
+    if (isWindows && errorMessage.includes("native extension")) {
+      helpMessage += `This appears to be a Windows native extension build failure.\n`;
+      helpMessage += `Try installing a specific Ruby version first:\n\n`;
+      helpMessage += `  - uses: ruby/setup-ruby@v1\n`;
+      helpMessage += `    with:\n`;
+      helpMessage += `      ruby-version: "3.4"\n\n`;
+      helpMessage += `See https://github.com/fontist/setup-fontist/issues/17 for more details.`;
+    } else if (errorMessage.includes("conflicting dependencies") || errorMessage.includes("Gem::DependencyResolutionError")) {
+      helpMessage += `This appears to be a Ruby dependency conflict.\n`;
+      helpMessage += `Try installing a newer Ruby version first:\n\n`;
+      helpMessage += `  - uses: ruby/setup-ruby@v1\n`;
+      helpMessage += `    with:\n`;
+      helpMessage += `      ruby-version: "3.4"\n`;
+    } else {
+      helpMessage += `Please ensure Ruby and build tools are properly installed.`;
+    }
+
+    core.setFailed(helpMessage);
+    process.exit(1);
+  }
 
   found = await tc.cacheDir(tempDir, "fontist", version);
 }
@@ -101,7 +174,7 @@ const bash = `\
 #!/bin/bash
 export GEM_PATH='${installDir}'
 export GEM_HOME='${installDir}'
-exec '${join(bindir, "fontist")}' "$@"`;
+exec ruby '${join(bindir, "fontist")}' "$@"`;
 await writeFile(join(wrappers, "fontist"), bash);
 await chmod(join(wrappers, "fontist"), 0o755);
 
