@@ -35021,7 +35021,7 @@ import * as os6 from "os";
 import * as path10 from "path";
 var semver2 = __toESM(require_semver2(), 1);
 import { ok as ok2 } from "assert";
-var __dirname = "/Users/mulgogi/src/fontist/setup-fontist/node_modules/@actions/tool-cache/lib";
+var __dirname = "/home/runner/work/setup-fontist/setup-fontist/node_modules/@actions/tool-cache/lib";
 var __awaiter8 = function(thisArg, _arguments, P, generator) {
   function adopt(value) {
     return value instanceof P ? value : new P(function(resolve2) {
