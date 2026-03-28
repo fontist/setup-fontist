@@ -228,7 +228,7 @@ See [issue #17](https://github.com/fontist/setup-fontist/issues/17) for more det
 
 # Development
 
-This action is built with [Bun](https://bun.sh/) but runs on Node.js 20.
+This action is built with [Bun](https://bun.sh/) but runs on Node.js 24.
 
 ```bash
 # Install dependencies
@@ -246,7 +246,7 @@ bun run format
 
 **Testing:** Tests are run via GitHub Actions. Open a PR to trigger test runs across ubuntu-latest and macos-latest runners.
 
-Note: Since [Bun doesn't support Windows yet](https://github.com/oven-sh/bun/issues/43), we can't run `bun build` on Windows runners. However, the action still works on Windows since Bun is only used for the build step; it runs using Node.js via `using: node20`.
+Note: Since [Bun doesn't support Windows yet](https://github.com/oven-sh/bun/issues/43), we can't run `bun build` on Windows runners. However, the action still works on Windows since Bun is only used for the build step; it runs using Node.js via `using: node24`.
 
 # License
 

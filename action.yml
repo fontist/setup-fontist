@@ -38,6 +38,6 @@ outputs:
     value: ${{ steps.setup-fontist.outputs.cache-hit }}
 
 runs:
-  using: node20
+  using: node24
   main: dist/main.js
   post: dist/post.js
