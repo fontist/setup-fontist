@@ -87,26 +87,33 @@ core.info(`Resolved version: v${version}`);
 
 let found = tc.find("fontist", version);
 let cacheHit = !!found;
+let installationCacheRestored = false;
+let installedThisRun = false;
 
 const workflowCache = core.getBooleanInput("cache");
 const keyPrefix = `fontist-${version}-${process.env.RUNNER_OS}`
 const installationKey = `${keyPrefix}-installation`;
+const installationCacheDir = join(
+  process.env.RUNNER_TEMP!,
+  `setup-fontist-installation-${version}`,
+);
 
 if (found) {
   core.info(`Fontist v${version} found in tool cache!`);
 } else {
   core.info(`Fontist v${version} not found in tool cache.`);
 
-  const tempDir = join(process.env.RUNNER_TEMP!, Math.random().toString());
-  await mkdir(tempDir);
+  await rm(installationCacheDir, { recursive: true, force: true });
+  await mkdir(installationCacheDir, { recursive: true });
 
   core.info(
     `Attempting to restore Fontist installation from workflow cache: ${installationKey}`,
   );
-  const hitKey = await cache.restoreCache([tempDir], installationKey);
+  const hitKey = await cache.restoreCache([installationCacheDir], installationKey);
+  installationCacheRestored = !!hitKey;
   if (hitKey) {
-    core.info(`Restored Fontist installation from workflow cache: ${tempDir}`);
-    found = await tc.cacheDir(tempDir, "fontist", version);
+    core.info(`Restored Fontist installation from workflow cache: ${installationCacheDir}`);
+    found = await tc.cacheDir(installationCacheDir, "fontist", version);
   }
 }
 cacheHit ||= !!found;
@@ -114,11 +121,11 @@ cacheHit ||= !!found;
 if (!found) {
   core.info(`Fontist v${version} not found in workflow cache.`);
 
-  const tempDir = join(process.env.RUNNER_TEMP!, Math.random().toString());
-  await mkdir(tempDir);
+  await rm(installationCacheDir, { recursive: true, force: true });
+  await mkdir(installationCacheDir, { recursive: true });
 
-  const installDir = join(tempDir, "install-dir");
-  const bindir = join(tempDir, "bindir");
+  const installDir = join(installationCacheDir, "install-dir");
+  const bindir = join(installationCacheDir, "bindir");
 
   core.info(`Using RubyGems to install Fontist v${version}...`);
   core.info(`Installing to ${installDir}`);
@@ -156,14 +163,30 @@ if (!found) {
     process.exit(1);
   }
 
-  found = await tc.cacheDir(tempDir, "fontist", version);
+  found = await tc.cacheDir(installationCacheDir, "fontist", version);
+  installedThisRun = true;
 }
 const installDir = join(found, "install-dir")
 const bindir = join(found, "bindir");
 
-if (workflowCache) {
+if (workflowCache && installedThisRun && !installationCacheRestored) {
   core.info(`Caching Fontist installation in workflow cache...`);
-  await cache.saveCache([found], installationKey);
+  try {
+    await cache.saveCache([installationCacheDir], installationKey);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (message.includes("Unable to reserve cache with key")) {
+      core.info(
+        `Installation cache save skipped because key is already being created: ${installationKey}`,
+      );
+    } else {
+      core.warning(`Installation cache save failed: ${message}`);
+    }
+  }
+} else if (workflowCache) {
+  core.info(
+    `Skipping installation cache save.`,
+  );
 }
 
 const wrappers = join(found, "wrappers");
@@ -187,6 +210,7 @@ await writeFile(join(wrappers, "fontist.cmd"), cmd);
 
 core.addPath(wrappers);
 core.setOutput("fontist-version", version);
+core.setOutput("cache-hit", String(cacheHit));
 core.info(`✅ Fontist v${version} installed!`);
 
 if (workflowCache) {
